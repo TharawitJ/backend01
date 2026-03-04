@@ -1,8 +1,9 @@
 import "dotenv/config";
 // sometime dotenv.config()
 import express from "express";
-import type {ErrorRequestHandler} from "express";
+import type { ErrorRequestHandler } from "express";
 import AuthRoute from "./routes/auth.routes.js";
+import { NotFound, errorHandler } from "./middleware/authMiddleware.js";
 
 const app = express();
 // use express.json() to help app to read json
@@ -18,15 +19,8 @@ app.get("/", (req, res) => {
 });
 
 // use((req,res))--> no path will be like *
-app.use((req, res) => {
-  res.send("No Service");
-});
-// error middleware
-const errorHandler:ErrorRequestHandler=(err,req,res,next)=>{
-    console.log('ERROR')
-    res.json({err:err.message})
-}
-app.use(errorHandler)
+app.use(NotFound);
+app.use(errorHandler);
 
 // app listen PORT and do the function
 app.listen(PORT, () => {
