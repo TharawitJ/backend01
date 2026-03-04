@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import CreateHttpError from "http-errors";
 import { prisma } from "../libs/prisma.js";
 import bcrypt from "bcrypt";
+import jwt from 'jsonwebtoken';
 
 export const register: RequestHandler = async (req, res, next) => {
   const { username, nickname, password } = req.body;
@@ -36,8 +37,31 @@ export const register: RequestHandler = async (req, res, next) => {
   console.log(newUser);
   res.send(`${username} Register Successful`);
 };
-export const login: RequestHandler = (req, res) => {
-  res.json({ message: "Login" });
+export const login: RequestHandler = async (req, res, next) => {
+  const { username, nickname, password } = req.body;
+  if (!username.trim() || !password.trim()) {
+    return next(CreateHttpError[400]("username and password are required"));
+  }
+  const userExist = await prisma.user.findUnique({
+    where: { username: username },
+  });
+
+  if (!userExist) {
+    return next(CreateHttpError[409](`Username : ${username} not registered`));
+  }
+  //   bcrypt password check รับก่อนเช็คทีหลัง
+  const pwCorrect = await bcrypt.compare(password,userExist.password);
+  if (!pwCorrect) {
+    return next(CreateHttpError[409](`Username password not correct`));
+  }
+// give accessToken to front
+const payload = {id:userExist.id,username:userExist.username}
+const token =jwt.sign(payload,process.env.JWT_SECRET!,{
+    algorithm:"HS256",
+    expiresIn:"7d"
+})
+    console.log(token)
+  res.json({ message: "Login Successful" });
 };
 export const getMe: RequestHandler = (req, res) => {
   res.json({ message: "getMe" });
